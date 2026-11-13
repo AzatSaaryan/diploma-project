@@ -21,10 +21,6 @@ jobs:
           enable-cache: true
       - run: uv sync --locked
       - run: uvx --from rust-just just check-format
-      defaults:
-        run:
-          working-directory: backend
-
 
   check-lint:
     name: Check Lint
