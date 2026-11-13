@@ -1,0 +1,31 @@
+set dotenv-load := true
+
+default:
+	@just --list
+
+runserver port:
+	@echo "Starting FastAPI server on port {{port}}..."
+	uv run fastapi dev app/main.py --reload --port {{port}}
+
+[group('check')]
+check-format:
+	@echo "🔍 Running ruff format..."
+	uv run ruff format .
+	@echo "✅ Formatting complete"
+
+[group('check')]
+check-lint:
+	@echo "🔍 Running ruff check with auto-fix..."
+	uv run ruff check --fix .
+	@echo "✅ Linting complete"
+
+[group('check')]
+check-types:
+	@echo "🔍 Running basedpyright type checking..."
+	uv run basedpyright .
+	@echo "✅ Type checking complete"
+
+[group('check')]
+check-all: check-format check-lint check-types
+	@echo ""
+	@echo "✅ All checks passed!"
