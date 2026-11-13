@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [develop]
   pull_request:
 
 jobs:
@@ -53,3 +53,16 @@ jobs:
           enable-cache: true
       - run: uv sync --locked
       - run: uvx --from rust-just just check-types
+
+  promote:
+    name: Promote develop to main
+    needs: [check-format, check-lint, check-types]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - run: git push origin HEAD:main
