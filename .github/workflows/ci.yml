@@ -9,6 +9,11 @@ jobs:
   check-format:
     name: Check Format
     runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: backend
+
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
@@ -16,10 +21,19 @@ jobs:
           enable-cache: true
       - run: uv sync --locked
       - run: uvx --from rust-just just check-format
+      defaults:
+        run:
+          working-directory: backend
+
 
   check-lint:
     name: Check Lint
     runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: backend
+
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
@@ -31,6 +45,11 @@ jobs:
   check-types:
     name: Check Types
     runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: backend
+
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
