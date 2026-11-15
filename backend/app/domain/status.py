@@ -1,0 +1,10 @@
+from enum import StrEnum
+
+
+class Status(StrEnum):
+    NOT_REGISTERED = "NOT_REGISTERED"
+    MODIFIED = "MODIFIED"
+    REVOKED = "REVOKED"
+    ISSUER_NOT_AUTHORIZED = "ISSUER_NOT_AUTHORIZED"
+    EXPIRED = "EXPIRED"
+    VALID = "VALID"
