@@ -37,3 +37,8 @@ ci-lint:
 check-all: check-format check-lint check-types
 	@echo ""
 	@echo "✅ All checks passed!"
+
+[group('check')]
+test *args:
+	@echo "🧪 Running pytest..."
+	uv run pytest {{args}}
