@@ -54,9 +54,25 @@ jobs:
       - run: uv sync --locked
       - run: uvx --from rust-just just check-types
 
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - run: uv sync --locked
+      - run: uvx --from rust-just just test
+
   promote:
     name: Promote develop to main
-    needs: [check-format, check-lint, check-types]
+    needs: [check-format, check-lint, check-types, test]
     if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
     runs-on: ubuntu-latest
     permissions:
