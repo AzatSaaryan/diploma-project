@@ -25,6 +25,14 @@ check-types:
 	uv run basedpyright .
 	@echo "✅ Type checking complete"
 
+[group('ci')]
+ci-format:
+	uv run ruff format --check .
+
+[group('ci')]
+ci-lint:
+	uv run ruff check .
+
 [group('check')]
 check-all: check-format check-lint check-types
 	@echo ""

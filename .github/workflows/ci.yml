@@ -20,7 +20,7 @@ jobs:
         with:
           enable-cache: true
       - run: uv sync --locked
-      - run: uvx --from rust-just just check-format
+      - run: uvx --from rust-just just ci-format
 
   check-lint:
     name: Check Lint
@@ -36,7 +36,7 @@ jobs:
         with:
           enable-cache: true
       - run: uv sync --locked
-      - run: uvx --from rust-just just check-lint
+      - run: uvx --from rust-just just ci-lint
 
   check-types:
     name: Check Types
