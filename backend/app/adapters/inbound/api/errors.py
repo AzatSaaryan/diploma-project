@@ -3,7 +3,12 @@ from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 
 from app.application.errors import RegistryUnavailable
-from app.domain.errors import DocumentNotFound, InvalidDocumentFile
+from app.domain.errors import (
+    DocumentFieldsUnreadable,
+    DocumentNotFound,
+    InvalidDocumentFields,
+    InvalidDocumentFile,
+)
 
 
 def _json(status_code: int, detail: str) -> JSONResponse:
@@ -18,6 +23,14 @@ def register_error_handlers(app: FastAPI) -> None:
     @app.exception_handler(InvalidDocumentFile)
     async def _invalid_file(_: Request, exc: InvalidDocumentFile) -> JSONResponse:
         return _json(status.HTTP_422_UNPROCESSABLE_CONTENT, str(exc))
+
+    @app.exception_handler(InvalidDocumentFields)
+    async def _invalid_fields(_: Request, exc: InvalidDocumentFields) -> JSONResponse:
+        return _json(status.HTTP_422_UNPROCESSABLE_CONTENT, str(exc))
+
+    @app.exception_handler(DocumentFieldsUnreadable)
+    async def _unreadable(_: Request, exc: DocumentFieldsUnreadable) -> JSONResponse:
+        return _json(status.HTTP_500_INTERNAL_SERVER_ERROR, str(exc))
 
     @app.exception_handler(RegistryUnavailable)
     async def _unavailable(_: Request, __: RegistryUnavailable) -> JSONResponse:

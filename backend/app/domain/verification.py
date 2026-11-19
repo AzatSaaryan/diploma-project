@@ -7,17 +7,13 @@ from app.domain.status import Status
 def decide_status(
     record: DocumentRecord | None,
     *,
-    file_hash: bytes | None,
+    fields_hash: bytes,
     issuer_authorized: bool,
     now: datetime,
 ) -> Status:
-    """Priority: NOT_REGISTERED > MODIFIED > REVOKED > ISSUER_NOT_AUTHORIZED
-    > EXPIRED > VALID. ``file_hash=None`` means verification by ID only, so the
-    MODIFIED check is skipped. All datetimes must be timezone-aware.
-    """
     if record is None:
         return Status.NOT_REGISTERED
-    if file_hash is not None and file_hash != record.document_hash:
+    if fields_hash != record.fields_hash:
         return Status.MODIFIED
     if record.revoked:
         return Status.REVOKED

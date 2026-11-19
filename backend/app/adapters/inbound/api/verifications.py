@@ -1,47 +1,51 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Path, UploadFile
+from fastapi import APIRouter, Depends, UploadFile
 
 from app.adapters.inbound.api.deps import (
+    DocumentId,
     SettingsDep,
-    get_document_status,
-    get_verify_document,
+    get_lookup_document,
+    get_verify_document_fields,
+    get_verify_document_file,
     read_upload,
 )
-from app.adapters.inbound.api.schemas import VerificationResponse
-from app.application.use_cases.get_document_status import GetDocumentStatus
-from app.application.use_cases.resolve_status import VerificationResult
-from app.application.use_cases.verify_document import VerifyDocument
+from app.adapters.inbound.api.schemas import (
+    FieldsIn,
+    LookupResponse,
+    VerificationResponse,
+)
+from app.application.use_cases.lookup_document import LookupDocument
+from app.application.use_cases.verify_document_fields import VerifyDocumentFields
+from app.application.use_cases.verify_document_file import VerifyDocumentFile
 
 router = APIRouter(prefix="/verifications", tags=["verifications"])
-
-DocumentId = Annotated[str, Path(pattern=r"^[0-9a-f]{32}$")]
-
-
-def _to_response(result: VerificationResult) -> VerificationResponse:
-    record = result.record
-    return VerificationResponse(
-        status=result.status,
-        document_id=result.document_id,
-        issuer=record.issuer if record else None,
-        issued_at=record.issued_at if record else None,
-        expires_at=record.expires_at if record else None,
-    )
 
 
 @router.post("")
 async def verify_file(
     file: UploadFile,
     settings: SettingsDep,
-    use_case: Annotated[VerifyDocument, Depends(get_verify_document)],
+    use_case: Annotated[VerifyDocumentFile, Depends(get_verify_document_file)],
 ) -> VerificationResponse:
     result = await use_case.execute(await read_upload(file, settings))
-    return _to_response(result)
+    return VerificationResponse.from_result(result)
 
 
-@router.get("/{document_id}")
-async def verify_by_id(
+@router.post("/{document_id}/lookup")
+async def lookup_document(
     document_id: DocumentId,
-    use_case: Annotated[GetDocumentStatus, Depends(get_document_status)],
+    use_case: Annotated[LookupDocument, Depends(get_lookup_document)],
+) -> LookupResponse:
+    result = await use_case.execute(document_id)
+    return LookupResponse(document_id=result.document_id, registered=result.registered)
+
+
+@router.post("/{document_id}")
+async def verify_fields(
+    document_id: DocumentId,
+    body: FieldsIn,
+    use_case: Annotated[VerifyDocumentFields, Depends(get_verify_document_fields)],
 ) -> VerificationResponse:
-    return _to_response(await use_case.execute(document_id))
+    result = await use_case.execute(document_id, body.to_domain())
+    return VerificationResponse.from_result(result)

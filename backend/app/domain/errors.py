@@ -1,5 +1,5 @@
 class DomainError(Exception):
-    """Base class for domain errors."""
+    pass
 
 
 class DocumentNotFound(DomainError):
@@ -11,4 +11,12 @@ class DocumentNotFound(DomainError):
 
 
 class InvalidDocumentFile(DomainError):
-    """The uploaded file is not a valid PDF document."""
+    pass
+
+
+class InvalidDocumentFields(DomainError):
+    pass
+
+
+class DocumentFieldsUnreadable(DomainError):
+    pass

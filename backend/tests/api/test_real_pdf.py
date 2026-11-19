@@ -5,49 +5,61 @@ import pytest
 from fastapi.testclient import TestClient
 from pydantic import SecretStr
 
-from app.adapters.outbound.pdf_stamper import PypdfStamper
+from app.adapters.outbound.pdf_renderer import ReportlabPdfRenderer
 from app.bootstrap import create_app
+from app.domain.fields import DocumentFields
 from app.settings import Settings
-from tests.api.conftest import AUTH
+from tests.api.conftest import AUTH, BOB
 from tests.fakes import FixedClock
-from tests.unit.test_pdf_stamper import make_pdf
 
 
 @pytest.fixture
-def real_client() -> Iterator[TestClient]:
-    settings = Settings(api_key=SecretStr("test-key"))
+def renderer() -> ReportlabPdfRenderer:
+    return ReportlabPdfRenderer("http://localhost:8000")
+
+
+@pytest.fixture
+def real_client(renderer: ReportlabPdfRenderer) -> Iterator[TestClient]:
     app = create_app(
-        settings,
-        stamper=PypdfStamper(settings.public_base_url),
+        Settings(api_key=SecretStr("test-key")),
+        renderer=renderer,
         clock=FixedClock(),
     )
     with TestClient(app) as client:
         yield client
 
 
+def verify(client: TestClient, pdf: bytes) -> dict[str, str]:
+    files = {"file": ("d.pdf", pdf, "application/pdf")}
+    response = client.post("/api/v1/verifications", files=files)
+    assert response.status_code == 200, response.text
+    return response.json()
+
+
 def test_register_and_verify_real_pdf(real_client: TestClient) -> None:
-    files = {"file": ("d.pdf", make_pdf(), "application/pdf")}
-    registered = real_client.post("/api/v1/documents", files=files, headers=AUTH)
+    registered = real_client.post("/api/v1/documents", json=BOB, headers=AUTH)
     assert registered.status_code == 200
-    stamped = registered.content
 
-    verified = real_client.post(
-        "/api/v1/verifications",
-        files={"file": ("d.pdf", stamped, "application/pdf")},
-    )
-    assert verified.json()["status"] == "VALID"
-    assert verified.json()["document_id"] == registered.headers["x-document-id"]
+    body = verify(real_client, registered.content)
 
-    tampered = real_client.post(
-        "/api/v1/verifications",
-        files={"file": ("d.pdf", stamped + b"\n%tampered", "application/pdf")},
-    )
-    assert tampered.json()["status"] == "MODIFIED"
+    assert body["status"] == "VALID"
+    assert body["document_id"] == registered.headers["x-document-id"]
+    assert body["first_name"] == "Bob"
 
 
-def test_unregistered_real_pdf(real_client: TestClient) -> None:
-    response = real_client.post(
-        "/api/v1/verifications",
-        files={"file": ("d.pdf", make_pdf(), "application/pdf")},
-    )
-    assert response.json()["status"] == "NOT_REGISTERED"
+def test_visible_name_change_is_modified(
+    real_client: TestClient, renderer: ReportlabPdfRenderer
+) -> None:
+    registered = real_client.post("/api/v1/documents", json=BOB, headers=AUTH)
+    document_id = registered.headers["x-document-id"]
+    forged = renderer.render(DocumentFields("Alice", "Smith"), document_id)
+
+    assert verify(real_client, forged)["status"] == "MODIFIED"
+
+
+def test_unregistered_real_pdf(
+    real_client: TestClient, renderer: ReportlabPdfRenderer
+) -> None:
+    pdf = renderer.render(DocumentFields("Bob", "Smith"), "0" * 32)
+
+    assert verify(real_client, pdf)["status"] == "NOT_REGISTERED"

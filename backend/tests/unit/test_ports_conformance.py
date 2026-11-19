@@ -1,8 +1,9 @@
 from app.adapters.outbound.in_memory_registry import InMemoryRegistry
+from app.adapters.outbound.pdf_renderer import ReportlabPdfRenderer
 from app.application.ports.clock import Clock
-from app.application.ports.pdf_stamper import PdfStamper
+from app.application.ports.pdf_renderer import PdfRenderer
 from app.application.ports.registry import Registry
-from tests.fakes import FailingRegistry, FakePdfStamper, FixedClock
+from tests.fakes import FailingRegistry, FakePdfRenderer, FixedClock
 
 
 def test_adapters_satisfy_ports() -> None:
@@ -11,6 +12,9 @@ def test_adapters_satisfy_ports() -> None:
         InMemoryRegistry("0xissuer", clock),
         FailingRegistry(),
     ]
-    stamper: PdfStamper = FakePdfStamper()
+    renderers: list[PdfRenderer] = [
+        FakePdfRenderer(),
+        ReportlabPdfRenderer("http://localhost"),
+    ]
     assert len(registries) == 2
-    assert stamper.extract_id(stamper.stamp(b"%PDF-", "ab")) == "ab"
+    assert len(renderers) == 2

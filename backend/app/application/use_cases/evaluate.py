@@ -3,6 +3,8 @@ from dataclasses import dataclass
 from app.application.ports.clock import Clock
 from app.application.ports.registry import Registry
 from app.domain.document import DocumentRecord
+from app.domain.fields import DocumentFields
+from app.domain.hashing import hash_fields
 from app.domain.status import Status
 from app.domain.verification import decide_status
 
@@ -11,23 +13,26 @@ from app.domain.verification import decide_status
 class VerificationResult:
     status: Status
     document_id: str | None
+    fields: DocumentFields | None
     record: DocumentRecord | None
 
 
-async def resolve_status(
+def not_registered(document_id: str | None) -> VerificationResult:
+    return VerificationResult(Status.NOT_REGISTERED, document_id, None, None)
+
+
+async def evaluate(
     registry: Registry,
     clock: Clock,
-    document_id: str | None,
-    file_hash: bytes | None,
+    document_id: str,
+    record: DocumentRecord,
+    fields: DocumentFields,
 ) -> VerificationResult:
-    """Shared by verification by file and by ID."""
-    if document_id is None:
-        return VerificationResult(Status.NOT_REGISTERED, None, None)
-    record = await registry.get(document_id)
-    if record is None:
-        return VerificationResult(Status.NOT_REGISTERED, document_id, None)
     authorized = await registry.is_issuer_authorized(record.issuer)
     status = decide_status(
-        record, file_hash=file_hash, issuer_authorized=authorized, now=clock()
+        record,
+        fields_hash=hash_fields(fields, document_id),
+        issuer_authorized=authorized,
+        now=clock(),
     )
-    return VerificationResult(status, document_id, record)
+    return VerificationResult(status, document_id, fields, record)

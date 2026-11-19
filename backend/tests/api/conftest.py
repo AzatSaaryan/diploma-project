@@ -7,11 +7,11 @@ from pydantic import SecretStr
 from app.adapters.outbound.in_memory_registry import InMemoryRegistry
 from app.bootstrap import create_app
 from app.settings import Settings
-from tests.fakes import FakePdfStamper, FixedClock
+from tests.fakes import FakePdfRenderer, FixedClock
 
 API_KEY = "test-key"
 AUTH = {"X-API-Key": API_KEY}
-PDF = b"%PDF-1.7\nhello"
+BOB = {"first_name": "Bob", "last_name": "Smith"}
 
 
 @pytest.fixture
@@ -28,7 +28,7 @@ def clock() -> FixedClock:
 def client(settings: Settings, clock: FixedClock) -> Iterator[TestClient]:
     app = create_app(
         settings,
-        stamper=FakePdfStamper(),
+        renderer=FakePdfRenderer(),
         registry=InMemoryRegistry(settings.issuer, clock),
         clock=clock,
     )

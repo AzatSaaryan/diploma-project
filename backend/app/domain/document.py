@@ -5,11 +5,12 @@ from datetime import datetime
 from app.domain.errors import InvalidDocumentFile
 
 PDF_SIGNATURE = b"%PDF-"
+DOCUMENT_ID_PATTERN = r"^[0-9a-f]{32}$"
 
 
 @dataclass(frozen=True, slots=True)
 class DocumentRecord:
-    document_hash: bytes
+    fields_hash: bytes
     issuer: str
     issued_at: datetime
     expires_at: datetime | None
@@ -17,7 +18,6 @@ class DocumentRecord:
 
 
 def new_document_id() -> str:
-    """32 hex chars: URL-safe and fits into a bytes32 of a smart contract."""
     return secrets.token_hex(16)
 
 
