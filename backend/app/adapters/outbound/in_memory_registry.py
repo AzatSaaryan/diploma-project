@@ -47,7 +47,6 @@ class InMemoryRegistry:
         return issuer in self._authorized
 
     def deauthorize(self, issuer: str) -> None:
-        """Test helper: withdraw the issuer's authorization."""
         self._authorized.discard(issuer)
 
     @staticmethod
